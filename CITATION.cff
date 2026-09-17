@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use Dome-Objaverse, please cite the TRIM paper."
+title: "Dome-Objaverse"
+type: dataset
+authors:
+  - family-names: Yin
+    given-names: Zeyuan
+  - family-names: Liu
+    given-names: Xiaoming
+repository-code: "https://github.com/zeyuanyin/Dome-Objaverse"
+url: "https://huggingface.co/datasets/zeyuanyin/Dome-Objaverse"
+license: CC-BY-4.0
+preferred-citation:
+  type: conference-paper
+  title: "TRIM: Scalable 3D Gaussian Diffusion Inference with Temporal and Spatial Trimming"
+  authors:
+    - family-names: Yin
+      given-names: Zeyuan
+    - family-names: Liu
+      given-names: Xiaoming
+  conference:
+    name: "Thirty-ninth Annual Conference on Neural Information Processing Systems"
+  year: 2025
+  url: "https://arxiv.org/abs/2511.16642"

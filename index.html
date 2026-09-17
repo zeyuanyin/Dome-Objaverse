@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dome-Objaverse Browser</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6df6'/%3E%3Cg fill='white'%3E%3Ccircle cx='16' cy='7' r='2.6'/%3E%3Ccircle cx='24.5' cy='12' r='2.6'/%3E%3Ccircle cx='24.5' cy='21' r='2.6'/%3E%3Ccircle cx='16' cy='25.5' r='2.6'/%3E%3Ccircle cx='7.5' cy='21' r='2.6'/%3E%3Ccircle cx='7.5' cy='12' r='2.6'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="description" content="Dome-Objaverse: 83,296 Objaverse objects rendered on a camera dome of 4 elevations x 12 azimuths, with normal and depth maps.">
+<link rel="canonical" href="https://zeyuanyin.github.io/Dome-Objaverse/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Dome-Objaverse">
+<meta property="og:description" content="83,296 Objaverse objects rendered on a camera dome of 4 elevations x 12 azimuths, with normal and depth maps. Search captions, inspect every view beside the camera that took it, reconstruct a point cloud in the browser.">
+<meta property="og:url" content="https://zeyuanyin.github.io/Dome-Objaverse/">
+<meta property="og:image" content="https://zeyuanyin.github.io/Dome-Objaverse/assets/grid.webp">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --panel-2: #eceef2;
+    --border: #d9dce2;
+    --text: #15181d;
+    --muted: #666d78;
+    --accent: #2f6df6;
+    --accent-fg: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1115;
+      --panel: #171a20;
+      --panel-2: #1f232b;
+      --border: #2a2f39;
+      --text: #e8eaed;
+      --muted: #9aa2ae;
+      --accent: #5b8cff;
+      --accent-fg: #0b0d11;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1115; --panel: #171a20; --panel-2: #1f232b; --border: #2a2f39;
+    --text: #e8eaed; --muted: #9aa2ae; --accent: #5b8cff; --accent-fg: #0b0d11;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  /* class-level display rules otherwise beat the UA stylesheet's [hidden] */
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  header {
+    padding: 36px 20px 28px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    background: radial-gradient(circle at 50% 0%, rgba(91,140,255,0.08) 0%, transparent 70%);
+  }
+  .header-brand {
+    display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;
+  }
+  .header-brand svg { width: 28px; height: 28px; fill: var(--accent); }
+  h1 {
+    font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--text) 30%, var(--muted) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sub {
+    color: var(--muted); font-size: 14px; max-width: 680px; line-height: 1.5; margin: 0 auto 16px;
+  }
+  .links {
+    display: inline-flex; align-items: center; gap: 10px; margin: 0 auto;
+  }
+  .links a {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    text-decoration: none; color: var(--text); background: var(--panel);
+    border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: all 0.15s ease;
+  }
+  .links a:hover {
+    background: var(--panel-2); border-color: var(--accent); color: var(--accent);
+    transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+  }
+  .links a svg { width: 14px; height: 14px; fill: currentColor; }
+  main { max-width: 1400px; margin: 0 auto; padding: 16px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  input[type=search], select, button {
+    font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px;
+  }
+  input[type=search] { flex: 1 1 260px; min-width: 0; }
+  button { cursor: pointer; }
+  button:hover { background: var(--panel-2); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+
+  .grid {
+    display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; cursor: pointer; text-align: left; padding: 0;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card .thumb {
+    aspect-ratio: 1; width: 100%; background: var(--panel-2);
+    display: grid; place-items: center; color: var(--muted); font-size: 11px;
+    background-repeat: no-repeat;
+    /* 10x10 sprite sheet: 100 objects arrive in one ~80KB request */
+    background-size: 1000% 1000%;
+  }
+  .card .meta { padding: 7px 9px; }
+  .card .cap {
+    font-size: 12px; line-height: 1.35; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card .id { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; margin-top: 3px; }
+
+  .status { color: var(--muted); font-size: 13px; padding: 10px 2px; }
+  .more { display: grid; place-items: center; padding: 20px; }
+
+  dialog {
+    width: min(1100px, 94vw); max-height: 92vh; padding: 0; border: 1px solid var(--border);
+    border-radius: 14px; background: var(--bg); color: var(--text); box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.55); }
+  .dlg-head {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 16px 18px; border-bottom: 1px solid var(--border);
+  }
+  .dlg-head h2 { margin: 0; font-size: 16px; }
+  .dlg-body { padding: 16px 18px; overflow: auto; max-height: calc(92vh - 70px); }
+  .stage {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    display: grid; place-items: center; aspect-ratio: 1; max-height: 52vh; overflow: hidden;
+  }
+  .stage img { width: 100%; height: 100%; object-fit: contain; }
+  /* Drag-to-reveal RGB/normal-depth compare: dmain (RGB) sits underneath, dmain2 (normal/depth)
+     is clipped to the slider position so the same pixel is compared, not a page-swap. */
+  .stage.compare { position: relative; }
+  .compare-over {
+    position: absolute; inset: 0; overflow: hidden;
+    clip-path: inset(0 0 0 var(--reveal, 100%));
+  }
+  .compare-over img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .compare-slider {
+    position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+    appearance: none; background: transparent; cursor: ew-resize; z-index: 2;
+  }
+  .compare-slider::-webkit-slider-thumb {
+    appearance: none; width: 3px; height: 100%; background: var(--accent); opacity: .9;
+    box-shadow: 0 0 0 8px rgba(47,109,246,.12);
+  }
+  .compare-slider::-moz-range-thumb {
+    width: 3px; height: 100%; background: var(--accent); border: none; opacity: .9;
+  }
+  .compare-slider::-webkit-slider-runnable-track { background: transparent; }
+  .compare-label {
+    position: absolute; top: 8px; font-size: 11px; padding: 2px 7px; border-radius: 5px;
+    background: rgba(0,0,0,.55); color: #fff; pointer-events: none; z-index: 1;
+  }
+  .compare-label.left { left: 8px; } .compare-label.right { right: 8px; }
+  .compare-hint {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(47,109,246,.92); color: #fff; font-size: 21px; line-height: 1;
+    font-weight: 700; pointer-events: none; z-index: 3;
+    box-shadow: 0 2px 10px rgba(0,0,0,.28), 0 0 0 4px rgba(255,255,255,.7);
+  }
+  .viewer-row { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; }
+  @media (min-width: 720px) { .viewer-row { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); } }
+  .strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px,1fr)); gap: 5px; margin-top: 14px; }
+  .strip img {
+    width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 5px;
+    background: var(--panel); border: 1px solid transparent; cursor: pointer; display: block;
+  }
+  .strip img.on { border-color: var(--accent); }
+  .kv { font-size: 13px; color: var(--muted); }
+  .kv b { color: var(--text); font-weight: 600; }
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  }
+  pre {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; overflow-x: auto;
+  }
+  input[type=range] { width: 100%; }
+  .stage3d {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; aspect-ratio: 1; max-height: 52vh;
+  }
+  .stage3d canvas { width: 100%; height: 100%; display: block; }
+  .bar { height: 4px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); width: 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-brand">
+    <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2f6df6"/><g fill="white"><circle cx="16" cy="7" r="2.6"/><circle cx="24.5" cy="12" r="2.6"/><circle cx="24.5" cy="21" r="2.6"/><circle cx="16" cy="25.5" r="2.6"/><circle cx="7.5" cy="21" r="2.6"/><circle cx="7.5" cy="12" r="2.6"/></g></svg>
+    <h1>Dome-Objaverse</h1>
+  </div>
+  <div class="sub" id="headsub">
+    83,296 objects &middot; 48 views on a dome of 4 elevations &times; 12 azimuths &middot; 512&times;512 RGBA + normal/depth
+  </div>
+  <div class="links">
+    <a href="https://huggingface.co/datasets/zeyuanyin/Dome-Objaverse" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-4.5a1 1 0 0 1-2 0V7a1 1 0 0 1 2 0z" style="display:none"/><path d="M4.5 10.5C3.67 10.5 3 11.17 3 12s.67 1.5 1.5 1.5S6 12.83 6 12s-.67-1.5-1.5-1.5zm15 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-7.5-6C8.91 4.5 6.36 6.8 6.05 9.77c.88.24 1.57.94 1.83 1.83.65-.37 1.39-.6 2.19-.6h3.86c.8 0 1.54.23 2.19.6.26-.89.95-1.59 1.83-1.83C17.64 6.8 15.09 4.5 12 4.5zm0 15c3.09 0 5.64-2.3 5.95-5.27-.88-.24-1.57-.94-1.83-1.83-.65.37-1.39.6-2.19.6h-3.86c-.8 0-1.54-.23-2.19-.6-.26.89-.95 1.59-1.83 1.83.31 2.97 2.86 5.27 5.95 5.27z"/></svg>
+      Dataset
+    </a>
+    <a href="https://github.com/zeyuanyin/Dome-Objaverse" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+      Code
+    </a>
+  </div>
+</header>
+
+<main>
+  <div class="controls">
+    <input type="search" id="q" aria-label="Search object captions" placeholder="Search 83,296 captions, or an object id / Objaverse UID">
+    <select id="split" aria-label="Dataset split">
+      <option value="dome_objaverse">Dome-Objaverse &middot; 48 views</option>
+      <option value="gobjaverse">GObjaverse &middot; 40 views</option>
+    </select>
+    <button id="rand">Random</button>
+  </div>
+
+  <div class="status" id="status">Loading index…</div>
+  <div class="grid" id="grid"></div>
+  <div class="more"><button id="more" hidden>Show more</button></div>
+</main>
+
+<dialog id="dlg">
+  <div class="dlg-head">
+    <div style="min-width:0">
+      <h2 id="dtitle">—</h2>
+      <div class="kv" id="dcap"></div>
+    </div>
+    <button style="margin-left:auto" id="dclose">Close</button>
+  </div>
+  <div class="dlg-body">
+    <div class="status" id="dstatus"></div>
+    <div class="bar" id="dbar" hidden><i></i></div>
+
+    <div class="viewer-row" id="drow" hidden>
+      <div>
+        <!-- Drag to compare RGB against normal/depth, rather than a click-to-toggle button. -->
+        <div class="stage compare" id="dcompare">
+          <img id="dmain" alt="Selected rendered view of the object">
+          <div class="compare-over">
+            <img id="dmain2" alt="Normal/depth for the same view">
+          </div>
+          <span class="compare-label left">RGB</span>
+          <span class="compare-label right">Normal / Depth</span>
+          <span class="compare-hint" id="compareHint" aria-hidden="true">↔</span>
+          <input type="range" id="dcompareSlider" min="0" max="100" value="50"
+                 aria-label="Drag to reveal normal/depth" class="compare-slider">
+        </div>
+      </div>
+      <div>
+        <!-- The rig sits beside the image so the camera that took it is visible at a glance. -->
+        <div class="stage3d"><canvas id="dcanvas"></canvas></div>
+      </div>
+    </div>
+
+    <div id="dctl" hidden>
+      <input type="range" id="dslider" min="0" max="0" value="0" aria-label="View index">
+      <div class="kv" id="dcampos" style="margin-top:8px"></div>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+        <button id="dspin">Stop orbit</button>
+        <button id="dground" hidden>Show base plane</button>
+      </div>
+      <div class="kv" id="d3status" style="margin-top:8px"></div>
+      <div class="strip" id="dstrip" role="list" aria-label="All views of this object"></div>
+    </div>
+    <details style="margin-top:14px">
+      <summary class="kv">Download this object</summary>
+      <pre id="dsnippet"></pre>
+    </details>
+  </div>
+</dialog>
+
+<!-- three.js addons import each other with the bare specifier "three", so they need a map -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import { parquetReadObjects, asyncBufferFromUrl } from 'https://cdn.jsdelivr.net/npm/hyparquet@1.31.0/+esm'
+
+const REPO = 'https://huggingface.co/datasets/zeyuanyin/Dome-Objaverse/resolve/main'
+
+// Folder names used by the published dataset.
+const SPLITS = {
+  dome_objaverse: { dir: 'dome_objaverse', views: 48, schema: 'rows' },
+  complete:       { dir: 'dome_objaverse', views: 48, schema: 'rows' }, // alias for backward compatibility
+  gobjaverse:     { dir: 'gobjaverse_parquet', views: 40, schema: 'kv'   },
+}
+
+const PAGE = 60
+
+// Cheap viewer tiers (see DESIGN.md). Thumbnails ship with the site; preview sprites
+// are byte ranges inside tar shards on the Hub.
+const THUMB_BASE = 'web/thumbnails'
+const PREVIEW_INDEX_URL = `${REPO}/preview/index.json`
+const PREVIEWS_PUBLISHED = true
+// Per-view depth highlighting is always on -- no toggle; the fused cloud alone is one click away
+// via 'Show base plane' style controls if ever needed again.
+
+const $ = s => document.querySelector(s)
+
+// Columnar index: parallel arrays, and UIDs in a separate file fetched during idle time.
+// Together those cut the up-front download from 3.37MB to 1.32MB gzipped.
+let IDS = [], CAPS = [], DISTS = [], UIDS = null
+let previewIndexPromise = null
+// Declared here rather than in the 3D section below: open() clears it, and open() runs first,
+// so a `const` down there is still in its temporal dead zone when the dialog opens.
+const viewPtsCache = new Map()   // view id -> Float32Array of that view's own depth points
+
+// Camera distance is PER OBJECT (see tools/build_metadata.py / metadata/camera_distances.json)
+// and ranges 1.50-2.00 across the dataset. Declared here, not near the rest of the 3D code
+// below, because open() sets it and open() is defined -- and runs -- first.
+let CAM_R = 1.75   // replaced per object in open()
+let POS = new Map()       // object_id -> global index, which fixes its sprite-sheet slot
+let filtered = []         // array of global indices
+let shown = 0
+
+// ---------- index ----------
+const idx = await (await fetch('web/objects.json')).json()
+IDS = idx.ids
+CAPS = idx.captions
+DISTS = idx.dists || []
+POS = new Map(IDS.map((id, i) => [id, i]))
+filtered = IDS.map((_, i) => i)
+$('#status').textContent = `${IDS.length.toLocaleString()} objects indexed.`
+
+// UIDs are only needed once a dialog opens, so fetch them off the critical path.
+const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1200))
+idle(() => fetch('web/uids.json').then(r => r.json()).then(u => { UIDS = u }).catch(() => {}))
+
+// A sheet covers 100 objects. sheets.json says which are published, so cards that map into a
+// sheet that has not been generated yet render a placeholder instead of firing a 404.
+const SHEETS = new Set((await (await fetch('web/sheets.json')).json().catch(() => ({ available: [] }))).available)
+
+function paintThumb(el, i) {
+  const sheet = Math.floor(i / idx.thumbs_per_sheet)
+  if (!SHEETS.has(sheet)) return
+  const pos = i % idx.thumbs_per_sheet
+  const cols = 10
+  el.style.backgroundImage = `url("${THUMB_BASE}/sheet_${String(sheet).padStart(4, '0')}.webp")`
+  el.style.backgroundPosition =
+    `${(pos % cols) / (cols - 1) * 100}% ${Math.floor(pos / cols) / (cols - 1) * 100}%`
+}
+
+render(true)
+
+// ---------- browsing ----------
+function render(reset) {
+  if (reset) { $('#grid').innerHTML = ''; shown = 0 }
+  const slice = filtered.slice(shown, shown + PAGE)
+  const frag = document.createDocumentFragment()
+  for (const i of slice) {
+    const id = IDS[i], cap = CAPS[i]
+    const el = document.createElement('button')
+    el.className = 'card'
+    el.setAttribute('aria-label', `${cap || id} — open all views`)
+    el.innerHTML = `<div class="thumb"></div>
+      <div class="meta"><div class="cap"></div><div class="id"></div></div>`
+    el.querySelector('.cap').textContent = cap || '(no caption)'
+    el.querySelector('.id').textContent = id
+    el.onclick = () => open(id, cap)
+    paintThumb(el.querySelector('.thumb'), i)
+    frag.appendChild(el)
+  }
+  $('#grid').appendChild(frag)
+  shown += slice.length
+  $('#more').hidden = shown >= filtered.length
+  $('#more').textContent = `Show more (${(filtered.length - shown).toLocaleString()} left)`
+}
+
+$('#more').onclick = () => render(false)
+
+// Load the next page as the sentinel scrolls into view; the button stays as a fallback.
+new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && shown < filtered.length) render(false)
+}, { rootMargin: '600px' }).observe($('#more'))
+
+let t
+$('#q').oninput = e => {
+  clearTimeout(t)
+  t = setTimeout(() => {
+    const q = e.target.value.trim().toLowerCase()
+    if (!q) {
+      filtered = IDS.map((_, i) => i)
+    } else {
+      filtered = []
+      // Match captions, partial object ids ("159/8" or "159/"), and full UIDs.
+      for (let i = 0; i < IDS.length; i++) {
+        if (CAPS[i].toLowerCase().includes(q) || IDS[i].includes(q) ||
+            (UIDS && UIDS[i].startsWith(q))) filtered.push(i)
+      }
+    }
+    $('#status').textContent = filtered.length
+      ? `${filtered.length.toLocaleString()} match${filtered.length === 1 ? '' : 'es'}.`
+      : `No captions match "${e.target.value.trim()}".`
+    render(true)
+  }, 180)
+}
+
+$('#rand').onclick = () => {
+  const i = Math.floor(Math.random() * IDS.length)
+  open(IDS[i], CAPS[i])
+}
+
+// ---------- geometry of the view grid ----------
+// dome_objaverse: view_id 0-35 = elevation {0,30,60} x 12 azimuths; 36-47 = elevation ~90.
+function angles(split, viewId) {
+  if (split === 'dome_objaverse' || split === 'complete') {
+    return viewId < 36
+      ? { el: [0, 30, 60][Math.floor(viewId / 12)], az: (viewId % 12) * 30 }
+      : { el: 90, az: (viewId - 36) * 30 }
+  }
+  return null // gobjaverse carries per-view camera JSON instead
+}
+
+// ---------- object viewer ----------
+let views = []       // [{id, rgb: blobUrl, nd: blobUrl|null, meta}]
+let cur = 0, spinning = null
+
+function revoke() {
+  for (const v of views) { if (v.rgb) URL.revokeObjectURL(v.rgb); if (v.nd) URL.revokeObjectURL(v.nd) }
+  views = []
+}
+
+let current = null        // {id, split}
+let fullRes = false
+let compareReveal = 50
+
+async function open(id, caption) {
+  const uid = UIDS ? UIDS[POS.get(id)] : null
+  const split = $('#split').value
+  const cfg = SPLITS[split]
+  current = { id, split }
+  fullRes = false
+  viewPtsCache.clear()
+  CAM_R = DISTS[POS.get(id)] ?? 1.75
+  $('#dtitle').textContent = id
+  $('#dcap').textContent = caption || ''
+  $('#drow').hidden = true
+  $('#dbar').hidden = false
+  $('#dbar').firstElementChild.style.width = '0%'
+  $('#dstatus').textContent = 'Loading…'
+  $('#dsnippet').textContent =
+`from huggingface_hub import hf_hub_download
+p = hf_hub_download("zeyuanyin/Dome-Objaverse", "${cfg.dir}/${id}.parquet", repo_type="dataset")` +
+    `
+
+${uid ? `\n# objaverse source mesh: ${uid}` : ''}`
+  $('#dlg').showModal()
+  history.replaceState(null, '', `#object=${id}&split=${split}`)
+  stopSpin()
+  revoke()
+  compareReveal = 50
+  $('#dcompareSlider').value = 50
+  $('#dcompare').style.setProperty('--reveal', '50%')
+  $('#compareHint').style.left = '50%'
+
+  await loadParquet(id, split)
+}
+
+async function previewIndex() {
+  if (!previewIndexPromise) {
+    previewIndexPromise = fetch(PREVIEW_INDEX_URL)
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+  }
+  return previewIndexPromise
+}
+
+// Fetch only one WEBP from an uncompressed tar shard using the byte range in index.json.
+async function loadPreview(id, split) {
+  if (!PREVIEWS_PUBLISHED) return false
+  if (split !== 'dome_objaverse' && split !== 'complete') return false   // previews are generated from the dome split
+  const manifest = await previewIndex()
+  const entry = manifest?.entries?.[id]
+  if (!entry) return false
+  if (!Number.isSafeInteger(entry.offset) || entry.offset < 0 ||
+      !Number.isSafeInteger(entry.length) || entry.length <= 0 ||
+      !/^shards\/preview-[\w-]+\.tar$/.test(entry.shard)) return false
+  $('#dstatus').textContent = 'Loading preview…'
+  const start = entry.offset
+  const end = start + entry.length - 1
+  const response = await fetch(`${REPO}/preview/${entry.shard}`, {
+    headers: { Range: `bytes=${start}-${end}` }
+  })
+  if (response.status !== 206) return false
+  const blob = await response.blob()
+  if (blob.size !== entry.length) return false
+  const img = new Image()
+  const imgUrl = URL.createObjectURL(blob)
+  const out = []
+  try {
+    const ok = await new Promise(res => {
+      img.onload = () => res(true)
+      img.onerror = () => res(false)
+      img.src = imgUrl
+    })
+    if (!ok) return false
+
+    const COLS = 8, CELL = 256
+    const rows = Math.round(img.naturalHeight / CELL)
+    const count = SPLITS[split].views
+    if (img.naturalWidth !== COLS * CELL || rows * COLS < count) return false
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = CELL
+    const ctx = canvas.getContext('2d')
+    for (let i = 0; i < count; i++) {
+      ctx.clearRect(0, 0, CELL, CELL)
+      ctx.drawImage(img, (i % COLS) * CELL, Math.floor(i / COLS) * CELL, CELL, CELL, 0, 0, CELL, CELL)
+      const cell = await new Promise(r => canvas.toBlob(r, 'image/webp', 0.9))
+      if (!cell) throw new Error('Could not decode preview sprite')
+      out.push({ id: i, rgb: URL.createObjectURL(cell), nd: null, meta: angles(split, i) })
+    }
+  } catch (err) {
+    for (const view of out) URL.revokeObjectURL(view.rgb)
+    throw err
+  } finally {
+    URL.revokeObjectURL(imgUrl)
+  }
+  views = out
+  $('#dbar').hidden = true
+  $('#drow').hidden = false
+  $('#dctl').hidden = false
+  $('#dstatus').textContent = `${views.length} views · 256px preview · full resolution on demand`
+  $('#dslider').max = String(views.length - 1)
+  $('#dslider').value = '0'
+  buildStrip()
+  show(0)
+  showRig(split)
+  startSpin()
+  return true
+}
+
+async function loadParquet(id, split) {
+  const cfg = SPLITS[split]
+  // The auto-orbit from the preview tier may still be running; its interval calls show(n)
+  // against `views`, which revoke() is about to empty. Left running, it throws on the next
+  // tick ("Cannot read properties of undefined (reading 'rgb')") for as long as the fetch below
+  // takes -- verified on the live site, ~9 errors across one parquet load.
+  stopSpin()
+  $('#drow').hidden = true
+  $('#dbar').hidden = false
+  $('#dbar').firstElementChild.style.width = '0%'
+  $('#dstatus').textContent = `Loading ${cfg.views} full-resolution views from ${cfg.dir}…`
+  revoke()
+
+  const url = `${REPO}/${cfg.dir}/${id}.parquet`
+  try {
+    const base = await asyncBufferFromUrl({ url })
+    const total = base.byteLength
+    let got = 0
+    const file = {
+      byteLength: total,
+      async slice(s, e) {
+        const b = await base.slice(s, e)
+        got += b.byteLength
+        $('#dbar').firstElementChild.style.width = Math.min(100, got / total * 100) + '%'
+        return b
+      },
+    }
+    const rows = await parquetReadObjects({ file, utf8: false })
+    views = cfg.schema === 'rows' ? fromRows(rows, split) : fromKV(rows)
+    if (!views.length) throw new Error('no views decoded')
+
+    $('#dstatus').textContent = `${views.length} views · ${(total / 1e6).toFixed(1)} MB`
+    $('#dbar').hidden = true
+    $('#drow').hidden = false
+    $('#dctl').hidden = false
+    fullRes = true
+    $('#dslider').max = String(views.length - 1)
+    $('#dslider').value = '0'
+    buildStrip()
+    show(0)
+    showRig(split)
+    startSpin()
+    try { await buildCloud() } catch (e) { $('#d3status').textContent = 'Reconstruction failed: ' + e.message }
+  } catch (err) {
+    $('#dbar').hidden = true
+    $('#dstatus').textContent = `Could not load this object: ${err.message}. ` +
+      `It may not exist in the "${split}" split — try another split.`
+  }
+}
+
+function blobUrl(bytes, type = 'image/png') {
+  return URL.createObjectURL(new Blob([bytes], { type }))
+}
+
+function fromRows(rows, split) {
+  const min = SPLITS[split].minView ?? 0
+  return rows
+    .map(r => ({ id: Number(r.view_id), rgbBytes: r.image_png, ndBytes: r.nd_png }))
+    .filter(v => v.id >= min)
+    .sort((a, b) => a.id - b.id)
+    .map(v => ({
+      id: v.id,
+      rgb: v.rgbBytes ? blobUrl(v.rgbBytes) : null,
+      nd: v.ndBytes ? blobUrl(v.ndBytes) : null,
+      // kept so the 3D panel can unproject depth without refetching
+      rgbBytes: v.rgbBytes,
+      ndBytes: v.ndBytes,
+      meta: angles(split, v.id),
+    }))
+    .filter(v => v.rgb)
+}
+
+// gobjaverse split stores (key, binary) blobs: "00000.png", "00000_nd.png", "00000.json", ...
+function fromKV(rows) {
+  const map = new Map(rows.map(r => [r.keys, r.values]))
+  const out = []
+  for (let i = 0; i < 40; i++) {
+    const k = String(i).padStart(5, '0')
+    const rgb = map.get(`${k}.png`)
+    if (!rgb) continue
+    let meta = null, pos = null
+    const js = map.get(`${k}.json`)
+    if (js) {
+      try {
+        const cam = JSON.parse(new TextDecoder().decode(js))
+        if (cam.origin) {
+          const [x, y, z] = cam.origin
+          const r = Math.hypot(x, y, z)
+          pos = [x, y, z]
+          meta = {
+            el: Math.round(Math.asin(z / r) * 180 / Math.PI),
+            az: (Math.round(Math.atan2(y, x) * 180 / Math.PI) + 360) % 360,
+            pos: [x, y, z],
+            r,
+          }
+        }
+      } catch {}
+    }
+    const ndBytes = map.get(`${k}_nd.png`)
+    out.push({
+      id: i, rgb: blobUrl(rgb), nd: ndBytes ? blobUrl(ndBytes) : null,
+      rgbBytes: rgb, ndBytes, meta, pos,
+    })
+  }
+  return out
+}
+
+function buildStrip() {
+  const strip = $('#dstrip')
+  strip.innerHTML = ''
+  views.forEach((v, i) => {
+    const img = new Image()
+    img.src = v.rgb
+    img.loading = 'lazy'
+    img.alt = `View ${v.id}${v.meta ? ` at azimuth ${v.meta.az} degrees, elevation ${v.meta.el} degrees` : ''}`
+    img.setAttribute('role', 'listitem')
+    img.onclick = () => { $('#dslider').value = String(i); show(i) }
+    strip.appendChild(img)
+  })
+}
+
+function show(i) {
+  cur = i
+  const v = views[i]
+  $('#dmain').src = v.rgb
+  $('#dmain2').src = v.nd || v.rgb
+  const hasND = !!v.nd
+  $('#dcompareSlider').value = compareReveal
+  $('#dcompare').style.setProperty('--reveal', `${compareReveal}%`)
+  $('#compareHint').style.left = `${compareReveal}%`
+  $('#dcompareSlider').style.display = hasND ? '' : 'none'
+  $('#compareHint').style.display = hasND ? '' : 'none'
+  $('#dcompare').querySelectorAll('.compare-label').forEach(el => el.style.display = hasND ? '' : 'none')
+  ;[...$('#dstrip').children].forEach((c, k) => c.classList.toggle('on', k === i))
+  highlightCam(i)   // sole metadata line: view id, azimuth, elevation, position, distance
+  if (cloud) showViewPoints(i)
+}
+
+$('#dslider').oninput = e => show(Number(e.target.value))
+
+// Drag-to-reveal compare: the right pane is clipped to the slider position via a CSS variable,
+// rather than swapping the whole image, so the same pixel is compared at every position.
+$('#dcompareSlider').oninput = e => {
+  compareReveal = Number(e.target.value)
+  $('#dcompare').style.setProperty('--reveal', `${compareReveal}%`)
+  $('#compareHint').style.left = `${compareReveal}%`
+}
+$('#dcompare').style.setProperty('--reveal', '50%')
+
+function stopSpin() {
+  if (spinning) { clearInterval(spinning); spinning = null }
+  $('#dspin').textContent = 'Begin orbit'
+}
+
+// All elevation rings, low to high, each as an ordered list of view indices.
+function rings() {
+  const byEl = new Map()
+  views.forEach((v, k) => {
+    const el = v.meta?.el
+    if (el === undefined || el === null) return
+    if (!byEl.has(el)) byEl.set(el, [])
+    byEl.get(el).push(k)
+  })
+  const out = [...byEl.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1])
+  return out.length ? out : [views.map((_, k) => k)]
+}
+
+function startSpin() {
+  if (spinning || views.length < 2) return
+  $('#dspin').textContent = 'Stop orbit'
+  const all = rings()
+  let ri = Math.max(0, all.findIndex(r => r.includes(cur)))
+  let at = Math.max(0, all[ri].indexOf(cur))
+  spinning = setInterval(() => {
+    at++
+    if (at >= all[ri].length) {      // finished this orbit, climb to the next elevation
+      at = 0
+      ri = (ri + 1) % all.length
+    }
+    const n = all[ri][at]
+    $('#dslider').value = String(n)
+    show(n)
+  }, 110)
+}
+
+$('#dspin').onclick = () => spinning ? stopSpin() : startSpin()
+
+$('#dclose').onclick = () => $('#dlg').close()
+$('#dlg').addEventListener('close', () => {
+  stopSpin(); revoke(); teardown3D()
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search)
+})
+
+// Arrow keys step through views; the dialog already handles Escape natively.
+addEventListener('keydown', e => {
+  if (!$('#dlg').open || !views.length) return
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+  e.preventDefault()
+  const n = (cur + (e.key === 'ArrowRight' ? 1 : views.length - 1)) % views.length
+  $('#dslider').value = String(n)
+  show(n)
+})
+
+// Deep link: #object=28/151384&split=dome_objaverse
+function openFromHash() {
+  const h = new URLSearchParams(location.hash.slice(1))
+  const id = h.get('object')
+  if (!id || !POS.has(id)) return
+  let sp = h.get('split')
+  if (sp === 'complete') sp = 'dome_objaverse'
+  if (sp && SPLITS[sp]) $('#split').value = sp
+  const i = POS.get(id)
+  open(IDS[i], CAPS[i])
+}
+addEventListener('hashchange', openFromHash)
+openFromHash()
+
+// ======================= 3D panel =======================
+// Capture geometry, taken from render/blender_script.py:
+//   camera distance = |[1.52213764, 0.8788066, 0.552170455]|, FOV = 0.691150367 rad
+//   camera position = R * (cos(el)cos(az), cos(el)sin(az), sin(el)), always aimed at the origin
+// Depth/normal encoding, from package/*_parquet_gen.py:
+//   depth  = alpha/65535 * 5.0      normals = rgb/65535 * 2 - 1
+// Verified against real data: unprojected points land inside the +/-0.45 box implied by the
+// 0.9 max-edge normalisation, and views 180 deg apart reconstruct opposite sides of one object.
+// Camera distance is PER OBJECT, read from that object's own GObjaverse camera JSON and shipped
+// in the index as `dists`. It ranges 1.50-2.00 across the dataset, so no global constant works:
+// fitting one against a single object reproduces that object and misaligns every other.
+const CAM_FOV = 0.691150367
+const DEPTH_SCALE = 5.0
+const VOXEL = 0.006        // dedup grid; one sample per 6mm of surface
+const FLYING_EPS = 0.02    // depth jump vs neighbours that marks a silhouette-straddling sample
+const GRAZING_MIN = 0.3    // reject surfaces seen beyond ~72 deg of incidence
+
+let THREE = null, scene, renderer, cam3, controls, rigGroup, activeMark, cloud, ground, raf = null
+let init3DGen = 0
+let viewPts = null            // the current view's own depth points, drawn over the fused cloud
+
+function camPose(split, viewId) {
+  if (split === 'gobjaverse') {
+    const v = views.find(item => item.id === viewId) || views[viewId]
+    if (v && v.meta && v.meta.pos) {
+      return { pos: v.meta.pos, az: v.meta.az, el: v.meta.el, r: v.meta.r }
+    }
+  }
+  const a = angles(split, viewId)
+  if (!a) return null
+  const az = a.az * Math.PI / 180, el = a.el * Math.PI / 180
+  return {
+    pos: [CAM_R * Math.cos(el) * Math.cos(az), CAM_R * Math.cos(el) * Math.sin(az), CAM_R * Math.sin(el)],
+    az: a.az, el: a.el, r: CAM_R,
+  }
+}
+
+// Right-handed basis for a camera at `pos`, at azimuth `azDeg`, looking at the origin.
+//
+// The right vector is derived from the azimuth rather than from a cross product with world up.
+// Both agree away from the poles, but at elevation 90 the cross product degenerates and an
+// arbitrary fallback freezes the camera roll across all 12 top-down views. Those views have
+// different azimuths, so each one landed rotated by a different amount and a distinctive
+// feature (a duck's beak) was smeared into a ring of 12 copies.
+function basis(pos, azDeg) {
+  const r = Math.hypot(pos[0], pos[1], pos[2]) || CAM_R
+  const f = pos.map(c => -c / r)
+  const a = azDeg * Math.PI / 180
+  const rt = [-Math.sin(a), Math.cos(a), 0]
+  const u = [rt[1]*f[2]-rt[2]*f[1], rt[2]*f[0]-rt[0]*f[2], rt[0]*f[1]-rt[1]*f[0]]
+  return { f, rt, u }
+}
+
+let init3DPromise = null
+
+// showRig() and buildCloud() both call this, and neither awaits the other -- without
+// memoizing the in-flight promise, two concurrent calls each build their own fresh
+// Scene/Camera/Renderer/canvas, and whichever finishes last silently replaces the
+// module-level scene/cam3/renderer, orphaning whatever buildRig() had already populated
+// (the rig appeared to exist -- 51 children, in-scene, visible -- yet never rendered,
+// because it was living in a scene nothing pointed a camera at anymore).
+async function init3D() {
+  if (THREE && renderer) return
+  if (init3DPromise) return init3DPromise
+  const myGen = ++init3DGen
+  init3DPromise = (async () => {
+    if (!THREE) THREE = await import('three')
+    const { OrbitControls } = await import('three/addons/controls/OrbitControls.js')
+    // The dialog may have been closed (teardown3D bumps init3DGen) while the imports
+    // above were in flight -- bail instead of resurrecting a renderer after teardown.
+    if (myGen !== init3DGen) return
+
+    // Swap in a brand-new <canvas> node rather than reusing the old one: recreating a
+    // WebGLRenderer on the same canvas after dispose() can leave the GPU context in a
+    // stale state that renders nothing (no error thrown) on second and later opens.
+    const oldCanvas = $('#dcanvas')
+    const canvas = oldCanvas.cloneNode(false)
+    oldCanvas.replaceWith(canvas)
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+    scene = new THREE.Scene()
+    cam3 = new THREE.PerspectiveCamera(45, 1, 0.01, 100)
+    cam3.position.set(3.4, 3.4, 2.7)   // comfortably frames the entire capture dome and cameras
+    cam3.up.set(0, 0, 1)
+    controls = new OrbitControls(cam3, canvas)
+    controls.enableDamping = true
+
+    scene.add(new THREE.GridHelper(2, 20, 0x888888, 0xcccccc).rotateX(Math.PI / 2))
+    scene.add(new THREE.AxesHelper(0.6))
+
+    const loop = () => {
+      if (!renderer || !scene || !cam3 || !controls) return
+      raf = requestAnimationFrame(loop)
+      controls.update()
+      renderer.render(scene, cam3)
+    }
+    loop()
+  })()
+  try {
+    await init3DPromise
+  } finally {
+    init3DPromise = null
+  }
+}
+
+function resize3D() {
+  if (!renderer) return
+  const el = $('#dcanvas').parentElement
+  const w = el.clientWidth, h = el.clientHeight
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+  renderer.setSize(w, h, false)
+  cam3.aspect = w / h
+  cam3.updateProjectionMatrix()
+}
+
+// One wireframe pyramid per viewpoint, so the capture rig is legible at a glance.
+function buildRig(split) {
+  if (rigGroup) { scene.remove(rigGroup); rigGroup.traverse(o => { o.geometry?.dispose(); o.material?.dispose() }) }
+  if (activeMark) { scene.remove(activeMark); activeMark.traverse(o => { o.geometry?.dispose(); o.material?.dispose() }) }
+  activeMark = null
+  rigGroup = new THREE.Group()
+  const t = Math.tan(CAM_FOV / 2), s = 0.16
+  for (let v = 0; v < views.length; v++) {
+    const p = camPose(split, views[v].id)
+    if (!p) continue
+    const { f, rt, u } = basis(p.pos, p.az)
+    const corner = (sx, sy) => p.pos.map((c, k) => c + (f[k] + rt[k]*sx*t + u[k]*sy*t) * s)
+    const c = [corner(-1,-1), corner(1,-1), corner(1,1), corner(-1,1)]
+    const pts = [p.pos, c[0], p.pos, c[1], p.pos, c[2], p.pos, c[3],
+                 c[0], c[1], c[1], c[2], c[2], c[3], c[3], c[0]]
+    const g = new THREE.BufferGeometry().setAttribute('position',
+      new THREE.Float32BufferAttribute(pts.flat(), 3))
+    const line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x475569, transparent: false, depthTest: true }))
+    line.userData.view = v
+    line.userData.pos = p.pos
+    rigGroup.add(line)
+  }
+
+  // Draw 3 subtle dashed orbit rings串起同一个elevation的cameras (0°, 30°, 60°)
+  if (split === 'dome_objaverse' || split === 'complete') {
+    const SEGMENTS = 96
+    const elevDegs = [0, 30, 60]
+    for (const elDeg of elevDegs) {
+      const elRad = elDeg * Math.PI / 180
+      const rOrbit = CAM_R * Math.cos(elRad)
+      const zOrbit = CAM_R * Math.sin(elRad)
+      const pts = []
+      for (let k = 0; k <= SEGMENTS; k++) {
+        const theta = (k / SEGMENTS) * Math.PI * 2
+        pts.push(new THREE.Vector3(rOrbit * Math.cos(theta), rOrbit * Math.sin(theta), zOrbit))
+      }
+      const gCircle = new THREE.BufferGeometry().setFromPoints(pts)
+      const mCircle = new THREE.LineDashedMaterial({
+        color: 0x94a3b8,
+        dashSize: 0.08,
+        gapSize: 0.05,
+        transparent: true,
+        opacity: 0.65,
+        depthTest: true
+      })
+      const ringLine = new THREE.Line(gCircle, mCircle)
+      ringLine.computeLineDistances()
+      rigGroup.add(ringLine)
+    }
+  }
+
+  scene.add(rigGroup)
+  highlightCam(cur)
+}
+
+function highlightCam(i) {
+  if (!rigGroup) return
+  let activePos = null
+  for (const line of rigGroup.children) {
+    if (line.userData.view === undefined) continue
+    const on = line.userData.view === i
+    line.material.color.setHex(on ? 0x2563eb : 0x334155)
+    line.material.transparent = false
+    line.material.depthTest = !on               // keep the active one visible through the rest
+    line.renderOrder = on ? 3 : 0
+    if (on) activePos = line.userData.pos
+  }
+
+  // a marker and a sight line, so the active camera is findable even when it overlaps others
+  if (activeMark) {
+    scene.remove(activeMark)
+    activeMark.traverse(o => { o.geometry?.dispose(); o.material?.dispose() })
+  }
+  activeMark = null
+  if (activePos) {
+    const grp = new THREE.Group()
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.045, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0x2563eb, depthTest: false }))
+    dot.position.set(...activePos)
+    dot.renderOrder = 4
+    const ray = new THREE.BufferGeometry().setAttribute('position',
+      new THREE.Float32BufferAttribute([...activePos, 0, 0, 0], 3))
+    const sight = new THREE.Line(ray, new THREE.LineBasicMaterial(
+      { color: 0x2563eb, transparent: true, opacity: 0.4, depthTest: false }))
+    sight.renderOrder = 2
+    grp.add(dot); grp.add(sight)
+    activeMark = grp
+    scene.add(grp)
+  }
+  const v = views[i]
+  const label = $('#dcampos')
+  if (!label) return
+  if (!v || !v.meta) { label.textContent = ''; return }
+  const p = camPose(current?.split, v.id)
+  const distVal = p?.r ?? CAM_R
+  label.innerHTML =
+    `<b>camera ${v.id}</b> &middot; azimuth ${v.meta.az}&deg; &middot; elevation ${v.meta.el}&deg;` +
+    (p ? ` &middot; position (${p.pos.map(c => c.toFixed(2)).join(', ')})` : '') +
+    (distVal ? ` &middot; distance ${distVal.toFixed(3)}` : '')
+}
+
+// Fuse the depth maps into one colored point cloud.
+async function buildCloud() {
+  await init3D()   // the dialog may have been closed and reopened since the tab was first shown
+  const { decode } = await import('https://cdn.jsdelivr.net/npm/fast-png@6.2.0/+esm')
+  const split = current.split
+  const step = 2   // the voxel grid caps density, so sample finer for uniformity
+
+  const pos = [], col = [], flat = []
+  let used = 0, raw = 0
+  // Every view re-samples the same surfaces on its own pixel lattice, so fusing 48 of them
+  // stacks 48 offset lattices and reads as layered patches. Dedup into a voxel grid so each
+  // bit of surface contributes once, and drop the two sample types that are not trustworthy:
+  // depth discontinuities (flying pixels straddling a silhouette) and grazing-angle hits.
+  const seen = new Set()
+  for (const v of views) {
+    if (!v.ndBytes || !v.rgbBytes) continue
+    const p = camPose(split, v.id)
+    if (!p) continue
+    const nd = decode(v.ndBytes)
+    const rgb = decode(v.rgbBytes)
+    const { width: W, height: H, data, channels: C } = nd
+    const rc = rgb.channels, rd = rgb.data
+    const rshift = rgb.depth === 16 ? 256 : 1
+    const { f, rt, u } = basis(p.pos, p.az)
+    const t = Math.tan(CAM_FOV / 2)
+    for (let y = step; y < H - step; y += step) {
+      for (let x = step; x < W - step; x += step) {
+        const i = (y * W + x) * C
+        const d = data[i + 3] / 65535 * DEPTH_SCALE
+        if (d <= 0 || d >= DEPTH_SCALE * 0.998) continue      // background
+        const ri = (y * W + x) * rc
+        if (rc === 4 && rd[ri + 3] / rshift < 128) continue   // transparent / antialiased edge
+        raw++
+
+        // flying pixel: depth jumps sharply against a 4-neighbour
+        let jump = 0
+        for (let k = 0; k < 4; k++) {
+          const dx = k < 2 ? (k ? -1 : 1) : 0, dy = k < 2 ? 0 : (k === 2 ? 1 : -1)
+          const dn = data[((y + dy) * W + (x + dx)) * C + 3] / 65535 * DEPTH_SCALE
+          if (dn > 0 && dn < DEPTH_SCALE * 0.998) jump = Math.max(jump, Math.abs(dn - d))
+        }
+        if (jump > FLYING_EPS) continue
+
+        // grazing angle: normals are stored (z, y, x), not (x, y, z) -- see README
+        const nz = data[i] / 65535 * 2 - 1
+        const ny_ = data[i + 1] / 65535 * 2 - 1
+        const nx_ = data[i + 2] / 65535 * 2 - 1
+        const nl = Math.hypot(nx_, ny_, nz) || 1
+        if (Math.abs((nx_ * f[0] + ny_ * f[1] + nz * f[2]) / nl) < GRAZING_MIN) continue
+
+        const ndx = (x + .5) / W * 2 - 1, ndy = 1 - (y + .5) / H * 2
+        const px = p.pos[0] + (f[0] + rt[0]*ndx*t + u[0]*ndy*t) * d
+        const py = p.pos[1] + (f[1] + rt[1]*ndx*t + u[1]*ndy*t) * d
+        const pz = p.pos[2] + (f[2] + rt[2]*ndx*t + u[2]*ndy*t) * d
+
+        const key = `${Math.round(px / VOXEL)},${Math.round(py / VOXEL)},${Math.round(pz / VOXEL)}`
+        if (seen.has(key)) continue
+        seen.add(key)
+
+        pos.push(px, py, pz)
+        col.push(rd[ri] / rshift / 255, rd[ri+1] / rshift / 255, rd[ri+2] / rshift / 255)
+        flat.push(Math.abs(nz / nl) > 0.9 ? pz : NaN)   // near-horizontal surface, for ground detection
+      }
+    }
+    used++
+  }
+  disposeCloud()
+  if (!pos.length) { $('#d3status').textContent = 'No depth data available for this object.'; return }
+
+  // Many Objaverse meshes sit on a flat base that is part of the model. It is real data, but it
+  // dominates the view, so split it out: the densest thin z-band of near-horizontal surface.
+  // 2cm bins: a 1cm bin splits the plane's spike across two neighbours and half of it escapes
+  // the band below.
+  const BIN = 0.02
+  const bins = new Map()
+  for (const z of flat) if (!Number.isNaN(z)) {
+    const k = Math.round(z / BIN)
+    bins.set(k, (bins.get(k) || 0) + 1)
+  }
+  let bestK = null, bestN = 0
+  for (const [k, n] of bins) if (n > bestN) { bestN = n; bestK = k }
+  const groundZ = bestK === null ? null : bestK * BIN
+  // Detected from horizontal facets, but applied as a height band so the slab's vertical edges
+  // and underside go with it instead of being left behind as a floating box outline.
+  const hasBase = groundZ !== null && bestN > pos.length / 3 * 0.05
+
+  // The object is centred and compact; the base slab is what sprawls outward. Take the radius
+  // containing almost all *structural* (non-horizontal) surface as the object's footprint, and
+  // treat anything beyond it as base. The z-band alone misses base sampled from low elevations,
+  // which lands above the slab and well outside the object.
+  const structR = []
+  for (let i = 0; i < pos.length / 3; i++) {
+    if (Number.isNaN(flat[i])) structR.push(Math.hypot(pos[i*3], pos[i*3+1]))
+  }
+  structR.sort((a, b) => a - b)
+  const footprint = structR.length
+    ? structR[Math.floor(structR.length * 0.97)] * 1.05
+    : Infinity
+
+  const isGround = i => {
+    if (!hasBase) return false
+    const z = pos[i * 3 + 2]
+    if (z < groundZ + 0.03 && z > groundZ - 0.06) return true
+    return Math.hypot(pos[i*3], pos[i*3+1]) > footprint && z < groundZ + 0.25
+  }
+
+  const objP = [], objC = [], grdP = [], grdC = []
+  for (let i = 0; i < pos.length / 3; i++) {
+    const [P, C2] = isGround(i) ? [grdP, grdC] : [objP, objC]
+    P.push(pos[i*3], pos[i*3+1], pos[i*3+2])
+    C2.push(col[i*3], col[i*3+1], col[i*3+2])
+  }
+
+  const mk = (P, C2, size) => {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3))
+    g.setAttribute('color', new THREE.Float32BufferAttribute(C2, 3))
+    return new THREE.Points(g, new THREE.PointsMaterial({ size, vertexColors: true }))
+  }
+  cloud = mk(objP, objC, 0.005)
+  scene.add(cloud)
+  if (grdP.length) {
+    ground = mk(grdP, grdC, 0.005)
+    ground.visible = false
+    scene.add(ground)
+  }
+  $('#dground').hidden = !grdP.length
+  $('#dground').textContent = 'Show base plane'
+  const g = cloud.geometry
+
+  // Deliberately does not reframe: the rig is the primary view, and framing the cloud
+  // (radius ~0.5) would push the cameras (radius ~1.84) out of shot. Whatever the user has
+  // orbited to stays put.
+
+  showViewPoints(cur)
+  const nGround = ground ? ground.geometry.getAttribute('position').count : 0
+  $('#d3status').textContent =
+    `${(objP.length / 3).toLocaleString()} points from ${used} depth maps` +
+    (nGround ? `, plus ${nGround.toLocaleString()} on a flat base (hidden)` : '') +
+    `. ${raw.toLocaleString()} samples deduped to one per ${VOXEL * 1000}mm.`
+}
+
+function disposeCloud() {
+  for (const o of [cloud, ground]) {
+    if (o) { scene?.remove(o); o.geometry.dispose(); o.material.dispose() }
+  }
+  cloud = ground = null
+}
+
+// The fused cloud keeps one point per 6mm voxel, so it cannot answer "what did THIS camera
+// measure" -- whole regions belong to whichever view reached them first. So unproject the asked
+// for view on its own, cached, and draw it over the dimmed fusion.
+async function showViewPoints(i) {
+  if (!cloud || !THREE) return
+  const v = views[i]
+  if (!v || !v.ndBytes) return
+
+  let pos = viewPtsCache.get(v.id)
+  if (!pos) {
+    const { decode } = await import('https://cdn.jsdelivr.net/npm/fast-png@6.2.0/+esm')
+    const p = camPose(current.split, v.id)
+    if (!p) return
+    const nd = decode(v.ndBytes)
+    const { width: W, height: H, data, channels: C } = nd
+    const { f, rt, u } = basis(p.pos, p.az)
+    const t = Math.tan(CAM_FOV / 2)
+    const out = []
+    for (let y = 2; y < H - 2; y += 3) {
+      for (let x = 2; x < W - 2; x += 3) {
+        const idx = (y * W + x) * C
+        const d = data[idx + 3] / 65535 * DEPTH_SCALE
+        if (d <= 0 || d >= DEPTH_SCALE * 0.998) continue
+        let jump = 0
+        for (let k = 0; k < 4; k++) {
+          const dx = k < 2 ? (k ? -1 : 1) : 0, dy = k < 2 ? 0 : (k === 2 ? 1 : -1)
+          const dn = data[((y + dy) * W + (x + dx)) * C + 3] / 65535 * DEPTH_SCALE
+          if (dn > 0 && dn < DEPTH_SCALE * 0.998) jump = Math.max(jump, Math.abs(dn - d))
+        }
+        if (jump > FLYING_EPS) continue
+        const ndx = (x + .5) / W * 2 - 1, ndy = 1 - (y + .5) / H * 2
+        out.push(p.pos[0] + (f[0] + rt[0]*ndx*t + u[0]*ndy*t) * d,
+                 p.pos[1] + (f[1] + rt[1]*ndx*t + u[1]*ndy*t) * d,
+                 p.pos[2] + (f[2] + rt[2]*ndx*t + u[2]*ndy*t) * d)
+      }
+    }
+    pos = new Float32Array(out)
+    viewPtsCache.set(v.id, pos)
+  }
+
+  if (!scene || !cloud) return
+  if (viewPts) { scene?.remove(viewPts); viewPts.geometry.dispose(); viewPts.material.dispose() }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  viewPts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0x2f6df6, size: 0.007 }))
+  scene.add(viewPts)
+
+  // recede the fusion so the current view's own measurement reads clearly
+  if (cloud) cloud.material.opacity = 0.25, cloud.material.transparent = true
+  if (ground) ground.material.opacity = 0.25, ground.material.transparent = true
+  $('#d3status').textContent =
+    `${(pos.length / 3).toLocaleString()} depth points from view ${v.id} highlighted over the fused cloud.`
+}
+
+function clearViewPoints() {
+  if (viewPts) { scene?.remove(viewPts); viewPts.geometry.dispose(); viewPts.material.dispose(); viewPts = null }
+  if (cloud) { cloud.material.opacity = 1; cloud.material.transparent = false }
+  if (ground) { ground.material.opacity = 1; ground.material.transparent = false }
+}
+
+function teardown3D() {
+  init3DGen++   // invalidate any init3D() still awaiting imports from before this close
+  clearViewPoints()
+  viewPtsCache.clear()
+  if (raf) { cancelAnimationFrame(raf); raf = null }
+  disposeCloud()
+  if (rigGroup) { scene?.remove(rigGroup); rigGroup = null }
+  if (activeMark) { scene?.remove(activeMark); activeMark = null }
+  if (renderer) { renderer.dispose(); renderer = null }
+  scene = cam3 = controls = undefined
+  // THREE itself is left loaded: it is a module singleton, and clearing it made any
+  // reconstruction still in flight fail with "Cannot read properties of null".
+}
+
+// The rig is shown next to the image, so it comes up with the object rather than on a tab.
+async function showRig(split) {
+  try {
+    await init3D()
+    resize3D()
+    buildRig(split)
+    highlightCam(cur)
+  } catch (e) {
+    $('#d3status').textContent = 'Could not start the 3D view: ' + e.message
+  }
+}
+
+
+$('#dground').onclick = () => {
+  if (!ground) return
+  ground.visible = !ground.visible
+  $('#dground').textContent = ground.visible ? 'Hide base plane' : 'Show base plane'
+}
+
+addEventListener('resize', resize3D)
+</script>
+</body>
+</html>

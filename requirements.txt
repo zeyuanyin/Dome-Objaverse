@@ -1,0 +1,16 @@
+# Dependencies for the build scripts under tools/.
+# The viewer itself (index.html) needs nothing installed -- it runs in the browser.
+
+# tools/build_metadata.py, tools/build_previews.py, tools/build_preview_shards.py
+pyarrow
+pillow
+requests
+
+# tools/upload_to_hf.py, tools/migrate_hf_folder.py, tools/verify_hf_release.py
+huggingface_hub
+
+# pipeline/3-package/*_parquet_gen.py -- reference only, not needed to use the dataset
+# tensorflow
+# imageio
+# opencv-python
+# tqdm

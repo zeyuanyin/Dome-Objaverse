@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+
+# Local working log for the AI agent(s) helping open-source this project -- not meant
+# to be public. GitHub Pages serves every file in the repo root, so this must never be
+# tracked even while the repo itself is private.
+code-agent.md
+
+# Large metadata files -- these belong on the Hugging Face dataset, not in git.
+# Staged locally for upload; see DESIGN.md.
+metadata/gobjaverse_index_to_objaverse.json
+metadata/gobjaverse_280k_index_to_objaverse.json
+metadata/text_captions_cap3d.json
+
+# Thumbnail sheets ship with the site under web/ because GitHub Pages serves the grid.
+# Per-object previews (~10GB) are uploaded to the Hub instead, never served from here.
+build/
+preview/
+preview_shards/
